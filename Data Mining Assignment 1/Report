@@ -1,0 +1,139 @@
+## 1. Invertibility Check Method
+
+def check_invertibility(X):
+    XtX = X.T @ X
+    det = np.linalg.det(XtX)
+    cond_num = np.linalg.cond(XtX)
+    is_invertible = (abs(det) > 1e-10) and (cond_num < 1e15)
+    return is_invertible
+
+**Method:**
+**Determinant Check:** If |det(X^T X)| > 1e-10, the matrix is not singular
+**Condition Number Check:** If cond(X^T X) < 1e15, the matrix is well-conditioned
+
+A matrix must be both non-singular (det ≠ 0) and well-conditioned (low condition number) for the Normal Equation to produce stable, accurate results. The thresholds (1e-10 and 1e15) can be adjusted.
+
+---
+
+## 2. Task 1 Results: Both Solvers Work
+
+**Dataset Design:**
+- 10 samples, 2 features
+- Features are linearly independent
+- Matrix is invertible
+
+**Results:**
+
+Normal Equation Results:
+  Weights: [ 0.58839779 -0.12154696  0.06906077]
+  RSS: 2.4033
+
+Gradient Descent Results:
+  Weights: [ 0.30991558 -0.15363331  0.11782219]
+  RSS: 2.5207
+
+RSS Difference: 0.117379
+
+**Comparison:**
+Both solvers give a difference of ~0.12, normal gives result immidiately, while gradient descent give result after 2000 epochs at 0.001 learning rate(alpha)
+
+---
+
+## 3. Task 2 Results: Only Gradient Descent Works
+
+**Dataset Design:**
+- 10 samples, 3 features
+- **Linear Dependencies:** Column 2 = 10 × Column 1, Column 3 = Column 1
+- Matrix is singular/non-invertible
+
+**Results:**
+
+  Weights: [0.00577891 0.00062858 0.00628575 0.00062858]
+  RSS: 3.3602
+
+**Analysis:**
+The Normal Equation cannot invert the X^T X matrix due to linear dependencies between features. However, Gradient Descent successfully found a solution.
+
+---
+
+## 4. RSS vs Iteration Plots
+
+Task 1: Well-Conditioned Matrix
+- Slowly curve to right
+
+Task 2: Ill-Conditioned Matrix
+- Rapidly drop and curve the right
+
+**Key Observation:** The condition of the matrix significantly impacts gradient descent performance.
+
+![Task 1 Gradient](image.png)
+![Task 2 Gradient](image2.png)
+
+---
+
+## 5. Task 3: Real-World Classification Results
+
+Dataset 1: Pima Indians Diabetes
+- **Samples:** 768 
+- **Features:** 8 
+
+Pima Indians Diabetes Dataset:
+  Training Accuracy Mean: 0.7716
+  Training Accuracy Std: 0.0124
+  Test Accuracy Mean: 0.7800
+  Test Accuracy Std: 0.0260
+  Training RSS Mean: 85.32
+  Training RSS Std: 3.22
+  Test RSS Mean: 37.14
+  Test RSS Std: 3.69
+
+Dataset 2: Blood Transfusion Service Center
+- **Samples:** 748 
+- **Features:** 4 
+
+  Training Accuracy Mean: 0.7624
+  Training Accuracy Std: 0.0101
+  Test Accuracy Mean: 0.7612
+  Test Accuracy Std: 0.0236
+  Training RSS Mean: nan
+  Training RSS Std: nan
+  Test RSS Mean: nan
+  Test RSS Std: nan
+
+## 6. Discussion and Observations
+
+Performance Analysis:
+
+**Accuracy:**
+   In term of training and test (accuracy mean, accuracy std), both dataset has nearly identical value.
+
+**RSS Analysis:**
+   RSS calculation for Blood Transfusion was exploded. I think this is where we can appli normalized appraoch.
+   For Pima Indian Diabetes, training and test Rss std ans somewhat similar, but the mean was significantly diffrent.
+
+### Critical Finding: Feature Normalization
+
+Real-world datasets required **feature normalization** to prevent gradient explosion (NaN/Inf values). Features had vastly different scales:
+- Diabetes: Glucose (0-200) vs Age (20-80)
+- Blood: Monetary (250-12500) vs Recency (0-74)
+
+Normalization formula: X_normalized = (X - mean) / std
+
+Without normalization, gradient descent failed completely. This highlights a key limitation of gradient-based methods compared to the Normal Equation.
+
+### Solver Selection:
+
+Both datasets used **Normal Equation** (all matrices were invertible), demonstrating that:
+- Real-world classification data typically has well-conditioned feature matrices
+- Normal Equation is preferred when applicable (instant solution vs 1000 iterations)
+
+### Model Limitations:
+
+Linear Regression for binary classification has inherent limitations:
+- Maximum achievable accuracy ~76% suggests **non-linear relationships** in data
+- More sophisticated models (Logistic Regression, Neural Networks) would likely perform better
+- Linear decision boundaries cannot capture complex patterns
+
+**Normal Equation vs Gradient Descent:**
+   - Normal Equation: Fast, exact solution for invertible matrices
+   - Gradient Descent: Robust to singular matrices but requires hyperparameter tuning
